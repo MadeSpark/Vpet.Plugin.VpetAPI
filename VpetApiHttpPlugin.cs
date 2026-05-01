@@ -30,7 +30,6 @@ namespace VPet.Plugin.VpetAPI
                 server = new HttpControlServer(stateController);
                 server.Start();
                 TryNotify($"VpetAPI HTTP 服务已启动：127.0.0.1:{server.Port}");
-                TryNotify("等级限制自动调整功能已启用");
             }
             catch (Exception ex)
             {
