@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <Nullable>enable</Nullable>
+    <AssemblyName>VPet.Plugin.VpetAPI</AssemblyName>
+    <RootNamespace>VPet.Plugin.VpetAPI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="1230_VpetAPIHttp\**" />
+    <EmbeddedResource Remove="1230_VpetAPIHttp\**" />
+    <None Remove="1230_VpetAPIHttp\**" />
+    <Page Remove="1230_VpetAPIHttp\**" />
+    <Compile Remove="tools\**" />
+    <EmbeddedResource Remove="tools\**" />
+    <None Remove="tools\**" />
+    <Page Remove="tools\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="VPet-Simulator.Core" Version="1.1.0.50" />
+    <PackageReference Include="VPet-Simulator.Windows.Interface" Version="1.1.0.50" />
+  </ItemGroup>
+
+  <Target Name="CopyToPluginFolder" AfterTargets="Build">
+    <PropertyGroup>
+      <PluginDir>$(ProjectDir)1230_VpetAPIHttp\plugin\</PluginDir>
+      <PluginDll>$(PluginDir)$(AssemblyName).dll</PluginDll>
+      <PluginPdb>$(PluginDir)$(AssemblyName).pdb</PluginPdb>
+    </PropertyGroup>
+    <MakeDir Directories="$(PluginDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDll)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFiles="$(PluginPdb)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+  </Target>
+</Project>
