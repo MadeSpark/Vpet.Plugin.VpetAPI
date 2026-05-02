@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using LinePutScript.Localization.WPF;
 using VPet_Simulator.Windows.Interface;
 
 namespace VPet.Plugin.VpetAPI
