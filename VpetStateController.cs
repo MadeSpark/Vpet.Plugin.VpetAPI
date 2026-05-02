@@ -171,7 +171,7 @@ namespace VPet.Plugin.VpetAPI
                 Feeling = food.Feeling,
                 Health = food.Health,
                 Likability = food.Likability,
-                Description = food.Description,
+                Description = LocalizeCore.Translate(food.Desc ?? string.Empty),
             };
         }
 

@@ -183,7 +183,7 @@ curl -X POST http://127.0.0.1:52814/set_play \
 | `feeling` | 心情 |
 | `health` | 健康 |
 | `likability` | 喜好程度/好感度 |
-| `description` | 介绍 |
+| `description` | 物品介绍文本（已翻译） |
 
 ### 调用示例
 
