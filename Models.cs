@@ -67,4 +67,26 @@ namespace VPet.Plugin.VpetAPI
         public string? Id { get; set; }
         public int Count { get; set; } = 1;
     }
+
+    public sealed class PetInfoResponse
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Level { get; set; }
+        public double Money { get; set; }
+        public double Exp { get; set; }
+        public int LevelUpNeed { get; set; }
+        public double Strength { get; set; }
+        public double StrengthMax { get; set; }
+        public double Feeling { get; set; }
+        public double StrengthFood { get; set; }
+        public double StrengthDrink { get; set; }
+        public double Likability { get; set; }
+        public double Health { get; set; }
+    }
+
+    public sealed class FakeDataRequest
+    {
+        public int? Level { get; set; }
+        public double? Money { get; set; }
+    }
 }

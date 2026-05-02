@@ -18,6 +18,10 @@ namespace VPet.Plugin.VpetAPI
         private readonly LevelLimitAdjuster levelLimitAdjuster;
         private readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
+        // 篡改数据存储
+        private int? fakeLevel = null;
+        private double? fakeMoney = null;
+
         public VpetStateController(IMainWindow mw, WorkCatalog workCatalog, PetMover mover, LevelLimitAdjuster levelLimitAdjuster)
         {
             this.mw = mw ?? throw new ArgumentNullException(nameof(mw));
@@ -67,6 +71,14 @@ namespace VPet.Plugin.VpetAPI
                     return await GetFoodListAsync(token, FoodListCategory.Gift).ConfigureAwait(false);
                 case "/buy_item":
                     return await BuyItemAsync(bodyText, token).ConfigureAwait(false);
+                case "/get_pet_info":
+                    return await GetPetInfoAsync(token).ConfigureAwait(false);
+                case "/set_fake_level":
+                    return await SetFakeLevelAsync(bodyText, token).ConfigureAwait(false);
+                case "/set_fake_money":
+                    return await SetFakeMoneyAsync(bodyText, token).ConfigureAwait(false);
+                case "/reset_fake_data":
+                    return await ResetFakeDataAsync(token).ConfigureAwait(false);
                 case "/set_menu":
                     return await SetMenuAsync(bodyText, token).ConfigureAwait(false);
                 case "/reset_status":
@@ -304,6 +316,78 @@ namespace VPet.Plugin.VpetAPI
             });
 
             return (200, new { });
+        }
+
+        private async Task<(int, object)> GetPetInfoAsync(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+
+            PetInfoResponse info = await mw.Dispatcher.InvokeAsync(() =>
+            {
+                var save = mw.Core.Save;
+                return new PetInfoResponse
+                {
+                    Name = save.Name,
+                    Level = fakeLevel ?? save.Level,
+                    Money = fakeMoney ?? save.Money,
+                    Exp = save.Exp,
+                    LevelUpNeed = save.LevelUpNeed(),
+                    Strength = save.Strength,
+                    StrengthMax = save.StrengthMax,
+                    Feeling = save.Feeling,
+                    StrengthFood = save.StrengthFood,
+                    StrengthDrink = save.StrengthDrink,
+                    Likability = save.Likability,
+                    Health = save.Health,
+                };
+            });
+
+            return (200, new { data = info });
+        }
+
+        private async Task<(int, object)> SetFakeLevelAsync(string bodyText, CancellationToken token)
+        {
+            var req = TryDeserialize<FakeDataRequest>(bodyText);
+            if (req?.Level == null)
+                return (400, new { error = "请求体需要包含 level" });
+
+            fakeLevel = Math.Max(1, req.Level.Value);
+
+            return (200, new 
+            { 
+                message = "等级篡改成功（仅UI显示）",
+                fakeLevel = fakeLevel.Value,
+                realLevel = mw.Core.Save.Level
+            });
+        }
+
+        private async Task<(int, object)> SetFakeMoneyAsync(string bodyText, CancellationToken token)
+        {
+            var req = TryDeserialize<FakeDataRequest>(bodyText);
+            if (req?.Money == null)
+                return (400, new { error = "请求体需要包含 money" });
+
+            fakeMoney = Math.Max(0, req.Money.Value);
+
+            return (200, new 
+            { 
+                message = "金钱篡改成功（仅UI显示）",
+                fakeMoney = fakeMoney.Value,
+                realMoney = mw.Core.Save.Money
+            });
+        }
+
+        private async Task<(int, object)> ResetFakeDataAsync(CancellationToken token)
+        {
+            fakeLevel = null;
+            fakeMoney = null;
+
+            return (200, new 
+            { 
+                message = "已恢复真实数据",
+                level = mw.Core.Save.Level,
+                money = mw.Core.Save.Money
+            });
         }
 
         private T? TryDeserialize<T>(string json) where T : class
