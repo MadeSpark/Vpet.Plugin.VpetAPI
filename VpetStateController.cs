@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,18 @@ namespace VPet.Plugin.VpetAPI
                     return await GetListAsync(token, WorkCategory.Study).ConfigureAwait(false);
                 case "/get_play_list":
                     return await GetListAsync(token, WorkCategory.Play).ConfigureAwait(false);
+                case "/get_favorite_food_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Star).ConfigureAwait(false);
+                case "/get_meal_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Meal).ConfigureAwait(false);
+                case "/get_snack_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Snack).ConfigureAwait(false);
+                case "/get_drink_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Drink).ConfigureAwait(false);
+                case "/get_functional_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Functional).ConfigureAwait(false);
+                case "/get_drug_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Drug).ConfigureAwait(false);
                 case "/set_menu":
                     return await SetMenuAsync(bodyText, token).ConfigureAwait(false);
                 case "/reset_status":
@@ -115,6 +128,50 @@ namespace VPet.Plugin.VpetAPI
         {
             var list = await workCatalog.GetNameListAsync(category, token).ConfigureAwait(false);
             return (200, new { data = list });
+        }
+
+        private async Task<(int, object)> GetFoodListAsync(CancellationToken token, FoodListCategory category)
+        {
+            token.ThrowIfCancellationRequested();
+
+            var foods = await mw.Dispatcher.InvokeAsync(() =>
+            {
+                IEnumerable<Food> source = category switch
+                {
+                    FoodListCategory.Star => mw.Foods.Where(food => food.Star || mw.Set["betterbuy"]["star"].GetInfos().Contains(food.Name)),
+                    FoodListCategory.Meal => mw.Foods.Where(food => food.Type == Food.FoodType.Meal),
+                    FoodListCategory.Snack => mw.Foods.Where(food => food.Type == Food.FoodType.Snack),
+                    FoodListCategory.Drink => mw.Foods.Where(food => food.Type == Food.FoodType.Drink),
+                    FoodListCategory.Functional => mw.Foods.Where(food => food.Type == Food.FoodType.Functional),
+                    FoodListCategory.Drug => mw.Foods.Where(food => food.Type == Food.FoodType.Drug),
+                    _ => Enumerable.Empty<Food>(),
+                };
+
+                return source
+                    .OrderBy(food => food.TranslateName, StringComparer.CurrentCulture)
+                    .Select(ToFoodInfo)
+                    .ToList();
+            });
+
+            return (200, new { data = foods });
+        }
+
+        private static FoodInfoResponse ToFoodInfo(Food food)
+        {
+            return new FoodInfoResponse
+            {
+                Name = food.TranslateName,
+                Id = food.Name,
+                Price = food.Price,
+                Exp = food.Exp,
+                StrengthFood = food.StrengthFood,
+                StrengthDrink = food.StrengthDrink,
+                Strength = food.Strength,
+                Feeling = food.Feeling,
+                Health = food.Health,
+                Likability = food.Likability,
+                Description = food.Description,
+            };
         }
 
         private async Task<(int, object)> ResetStatusAsync(CancellationToken token)

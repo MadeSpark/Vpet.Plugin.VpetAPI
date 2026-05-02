@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
     <AssemblyName>VPet.Plugin.VpetAPI</AssemblyName>
     <RootNamespace>VPet.Plugin.VpetAPI</RootNamespace>
   </PropertyGroup>

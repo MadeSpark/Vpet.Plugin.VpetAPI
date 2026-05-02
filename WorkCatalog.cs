@@ -66,7 +66,7 @@ namespace VPet.Plugin.VpetAPI
             // 如果提供了等级限制调整器，先调整等级限制
             if (adjuster != null && item is GraphHelper.Work work)
             {
-                item = adjuster.AdjustBeforeStart(work);
+                item = adjuster.AdjustBeforeStart(work) ?? item;
             }
 
             await mw.Dispatcher.InvokeAsync(() => InvokeStartWork(item));

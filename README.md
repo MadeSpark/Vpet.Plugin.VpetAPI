@@ -132,6 +132,67 @@ curl -X POST http://127.0.0.1:52814/set_play \
 
 ---
 
+## 🛒 商店物品列表 API
+
+插件复用了官方“更好买”窗口的数据源 `mw.Foods` 与 `Food.FoodType` 分类逻辑，支持读取收藏、正餐、零食、饮料、功能性、药品列表。
+
+### 接口列表
+
+| 接口 | 说明 |
+|------|------|
+| `POST /get_favorite_food_list` | 取收藏列表 |
+| `POST /get_meal_list` | 取正餐列表 |
+| `POST /get_snack_list` | 取零食列表 |
+| `POST /get_drink_list` | 取饮料列表 |
+| `POST /get_functional_list` | 取功能性列表 |
+| `POST /get_drug_list` | 取药品列表 |
+
+### 返回格式
+
+```json
+{
+  "data": [
+    {
+      "name": "纸包鸡",
+      "id": "纸包鸡",
+      "price": 35.5,
+      "exp": 0,
+      "strengthFood": 10.0,
+      "strengthDrink": 0.0,
+      "strength": 0.0,
+      "feeling": 1.0,
+      "health": 0.0,
+      "likability": 0.0,
+      "description": "喜好度:\t100%\n物品介绍"
+    }
+  ]
+}
+```
+
+字段说明：
+
+| 字段 | 说明 |
+|------|------|
+| `name` | 翻译后的物品名称 |
+| `id` | 物品原始ID/名称 |
+| `price` | 价格 |
+| `exp` | 经验值 |
+| `strengthFood` | 饱腹感 |
+| `strengthDrink` | 口渴度 |
+| `strength` | 体力 |
+| `feeling` | 心情 |
+| `health` | 健康 |
+| `likability` | 喜好程度/好感度 |
+| `description` | 介绍 |
+
+### 调用示例
+
+```bash
+curl -X POST http://127.0.0.1:52814/get_meal_list -H "Content-Type: application/json" -d '{}'
+```
+
+---
+
 ## 📈 详细数据
 
 ### 不同工作的倍率对比

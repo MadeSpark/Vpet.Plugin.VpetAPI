@@ -34,4 +34,29 @@ namespace VPet.Plugin.VpetAPI
         Study = 1,
         Play = 2,
     }
+
+    public enum FoodListCategory
+    {
+        Star = 0,
+        Meal = 1,
+        Snack = 2,
+        Drink = 3,
+        Functional = 4,
+        Drug = 5,
+    }
+
+    public sealed class FoodInfoResponse
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+        public double Price { get; set; }
+        public int Exp { get; set; }
+        public double StrengthFood { get; set; }
+        public double StrengthDrink { get; set; }
+        public double Strength { get; set; }
+        public double Feeling { get; set; }
+        public double Health { get; set; }
+        public double Likability { get; set; }
+        public string Description { get; set; } = string.Empty;
+    }
 }
