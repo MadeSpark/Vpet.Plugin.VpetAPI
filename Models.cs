@@ -43,6 +43,7 @@ namespace VPet.Plugin.VpetAPI
         Drink = 3,
         Functional = 4,
         Drug = 5,
+        Gift = 6,
     }
 
     public sealed class FoodInfoResponse
@@ -57,6 +58,13 @@ namespace VPet.Plugin.VpetAPI
         public double Feeling { get; set; }
         public double Health { get; set; }
         public double Likability { get; set; }
+        public string LikabilityPercent { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+    }
+
+    public sealed class BuyItemRequest
+    {
+        public string? Id { get; set; }
+        public int Count { get; set; } = 1;
     }
 }

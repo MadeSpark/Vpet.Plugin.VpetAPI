@@ -63,6 +63,10 @@ namespace VPet.Plugin.VpetAPI
                     return await GetFoodListAsync(token, FoodListCategory.Functional).ConfigureAwait(false);
                 case "/get_drug_list":
                     return await GetFoodListAsync(token, FoodListCategory.Drug).ConfigureAwait(false);
+                case "/get_gift_list":
+                    return await GetFoodListAsync(token, FoodListCategory.Gift).ConfigureAwait(false);
+                case "/buy_item":
+                    return await BuyItemAsync(bodyText, token).ConfigureAwait(false);
                 case "/set_menu":
                     return await SetMenuAsync(bodyText, token).ConfigureAwait(false);
                 case "/reset_status":
@@ -145,6 +149,7 @@ namespace VPet.Plugin.VpetAPI
                     FoodListCategory.Drink => mw.Foods.Where(food => food.Type == Food.FoodType.Drink),
                     FoodListCategory.Functional => mw.Foods.Where(food => food.Type == Food.FoodType.Functional),
                     FoodListCategory.Drug => mw.Foods.Where(food => food.Type == Food.FoodType.Drug),
+                    FoodListCategory.Gift => mw.Foods.Where(food => food.Type == Food.FoodType.Gift),
                     _ => Enumerable.Empty<Food>(),
                 };
 
@@ -171,8 +176,95 @@ namespace VPet.Plugin.VpetAPI
                 Feeling = food.Feeling,
                 Health = food.Health,
                 Likability = food.Likability,
+                LikabilityPercent = "100%", // 默认100%，实际值需要从游戏内部状态获取
                 Description = LocalizeCore.Translate(food.Desc ?? string.Empty),
             };
+        }
+
+        private async Task<(int, object)> BuyItemAsync(string bodyText, CancellationToken token)
+        {
+            var req = TryDeserialize<BuyItemRequest>(bodyText) ?? new BuyItemRequest();
+            
+            if (req.Count <= 0)
+                req.Count = 1;
+
+            Food? targetFood = null;
+
+            await mw.Dispatcher.InvokeAsync(() =>
+            {
+                if (string.IsNullOrWhiteSpace(req.Id))
+                {
+                    // 随机购买
+                    if (mw.Foods.Count > 0)
+                    {
+                        var random = new Random();
+                        targetFood = mw.Foods[random.Next(mw.Foods.Count)];
+                    }
+                }
+                else
+                {
+                    // 按名称或ID查找
+                    targetFood = mw.Foods.FirstOrDefault(f => 
+                        string.Equals(f.Name, req.Id, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(f.TranslateName, req.Id, StringComparison.OrdinalIgnoreCase));
+                }
+            });
+
+            if (targetFood == null)
+                return (404, new { error = "未找到指定物品" });
+
+            // 执行购买逻辑（参考 winBetterBuy.xaml.cs 的 BtnBuy_Click）
+            bool success = false;
+            string? errorMsg = null;
+
+            await mw.Dispatcher.InvokeAsync(() =>
+            {
+                try
+                {
+                    for (int i = 0; i < req.Count; i++)
+                    {
+                        // 检查金钱（$1000以内允许赊账）
+                        if (targetFood.Price >= 1000 && targetFood.Price > mw.Core.Save.Money)
+                        {
+                            errorMsg = $"金钱不足，需要 {targetFood.Price:f2}，当前拥有 {mw.Core.Save.Money:f2}";
+                            return;
+                        }
+
+                        // 检查超模（如果启用HashCheck）
+                        if (mw.HashCheck && targetFood.IsOverLoad())
+                        {
+                            mw.HashCheckOff();
+                        }
+
+                        // 扣除金钱
+                        mw.Core.Save.Money -= targetFood.Price;
+                        
+                        // 使用物品
+                        mw.TakeItem(targetFood);
+                    }
+
+                    // 显示动画
+                    mw.DisplayFoodAnimation(targetFood.GetGraph(), targetFood.ImageSource);
+                    
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    errorMsg = ex.Message;
+                }
+            });
+
+            if (!success)
+                return (400, new { error = errorMsg ?? "购买失败" });
+
+            return (200, new 
+            { 
+                message = "购买成功",
+                item = targetFood.TranslateName,
+                count = req.Count,
+                totalPrice = targetFood.Price * req.Count,
+                remainingMoney = mw.Core.Save.Money
+            });
         }
 
         private async Task<(int, object)> ResetStatusAsync(CancellationToken token)
