@@ -18,10 +18,6 @@ namespace VPet.Plugin.VpetAPI
         private readonly LevelLimitAdjuster levelLimitAdjuster;
         private readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        // 篡改数据存储
-        private int? fakeLevel = null;
-        private double? fakeMoney = null;
-
         public VpetStateController(IMainWindow mw, WorkCatalog workCatalog, PetMover mover, LevelLimitAdjuster levelLimitAdjuster)
         {
             this.mw = mw ?? throw new ArgumentNullException(nameof(mw));
@@ -328,8 +324,8 @@ namespace VPet.Plugin.VpetAPI
                 return new PetInfoResponse
                 {
                     Name = save.Name,
-                    Level = fakeLevel ?? save.Level,
-                    Money = fakeMoney ?? save.Money,
+                    Level = save.Level,  // 会被 Harmony Hook 拦截
+                    Money = save.Money,  // 会被 Harmony Hook 拦截
                     Exp = save.Exp,
                     LevelUpNeed = save.LevelUpNeed(),
                     Strength = save.Strength,
@@ -351,13 +347,13 @@ namespace VPet.Plugin.VpetAPI
             if (req?.Level == null)
                 return (400, new { error = "请求体需要包含 level" });
 
-            fakeLevel = Math.Max(1, req.Level.Value);
+            UIDataFaker.FakeLevel = Math.Max(1, req.Level.Value);
 
             return (200, new 
             { 
-                message = "等级篡改成功（仅UI显示）",
-                fakeLevel = fakeLevel.Value,
-                realLevel = mw.Core.Save.Level
+                message = "等级篡改成功（UI显示已更新）",
+                fakeLevel = UIDataFaker.FakeLevel.Value,
+                realLevel = await GetRealLevelAsync()
             });
         }
 
@@ -367,26 +363,57 @@ namespace VPet.Plugin.VpetAPI
             if (req?.Money == null)
                 return (400, new { error = "请求体需要包含 money" });
 
-            fakeMoney = Math.Max(0, req.Money.Value);
+            UIDataFaker.FakeMoney = Math.Max(0, req.Money.Value);
 
             return (200, new 
             { 
-                message = "金钱篡改成功（仅UI显示）",
-                fakeMoney = fakeMoney.Value,
-                realMoney = mw.Core.Save.Money
+                message = "金钱篡改成功（UI显示已更新）",
+                fakeMoney = UIDataFaker.FakeMoney.Value,
+                realMoney = await GetRealMoneyAsync()
             });
         }
 
         private async Task<(int, object)> ResetFakeDataAsync(CancellationToken token)
         {
-            fakeLevel = null;
-            fakeMoney = null;
+            UIDataFaker.Reset();
 
             return (200, new 
             { 
                 message = "已恢复真实数据",
-                level = mw.Core.Save.Level,
-                money = mw.Core.Save.Money
+                level = await GetRealLevelAsync(),
+                money = await GetRealMoneyAsync()
+            });
+        }
+
+        // 获取真实等级（绕过 Harmony Hook）
+        private async Task<int> GetRealLevelAsync()
+        {
+            return await mw.Dispatcher.InvokeAsync(() =>
+            {
+                var exp = mw.Core.Save.Exp;
+                return exp < 0 ? 1 : (int)(Math.Sqrt(exp) / 10) + 1;
+            });
+        }
+
+        // 获取真实金钱（直接访问字段）
+        private async Task<double> GetRealMoneyAsync()
+        {
+            return await mw.Dispatcher.InvokeAsync(() =>
+            {
+                // 通过反射访问私有字段来获取真实值
+                var saveType = mw.Core.Save.GetType();
+                var moneyField = saveType.GetField("money", 
+                    System.Reflection.BindingFlags.Instance | 
+                    System.Reflection.BindingFlags.NonPublic);
+                
+                if (moneyField != null)
+                {
+                    var value = moneyField.GetValue(mw.Core.Save);
+                    if (value is double money)
+                        return money;
+                }
+                
+                return mw.Core.Save.Money;
             });
         }
 

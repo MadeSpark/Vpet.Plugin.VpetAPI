@@ -20,6 +20,9 @@ namespace VPet.Plugin.VpetAPI
 
         public override void LoadPlugin()
         {
+            // 初始化 UI 数据篡改器（Harmony Hooks）
+            UIDataFaker.Initialize();
+
             mover = new PetMover(MW);
             workCatalog = new WorkCatalog(MW);
             levelLimitAdjuster = new LevelLimitAdjuster(MW);
@@ -57,6 +60,7 @@ namespace VPet.Plugin.VpetAPI
         ~VpetApiHttpPlugin()
         {
             try { server?.Stop(); } catch { }
+            try { UIDataFaker.Uninitialize(); } catch { }
         }
 
         private void TryNotify(string text)
