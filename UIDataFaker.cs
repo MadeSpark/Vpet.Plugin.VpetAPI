@@ -19,6 +19,8 @@ namespace VPet.Plugin.VpetAPI
         private static int? _fakeLevel;
         private static double? _fakeMoney;
         private static string _customType = "穷逼系统ProMax";
+        private static bool _smartMoneyMode = false;
+        private static Func<double>? _getRealMoney;
 
         public static int? FakeLevel
         {
@@ -36,6 +38,18 @@ namespace VPet.Plugin.VpetAPI
         {
             get => _customType;
             set => _customType = value ?? "穷逼系统ProMax";
+        }
+
+        public static bool SmartMoneyMode
+        {
+            get => _smartMoneyMode;
+            set => _smartMoneyMode = value;
+        }
+
+        public static Func<double>? GetRealMoneyFunc
+        {
+            get => _getRealMoney;
+            set => _getRealMoney = value;
         }
 
         public static void Initialize()
@@ -68,6 +82,8 @@ namespace VPet.Plugin.VpetAPI
             _fakeLevel = null;
             _fakeMoney = null;
             _customType = "穷逼系统ProMax";
+            _smartMoneyMode = false;
+            _getRealMoney = null;
         }
 
         public static int GetDisplayLevel(int realLevel)
@@ -82,11 +98,33 @@ namespace VPet.Plugin.VpetAPI
 
         private static void ToolBar_M_TimeUIHandle_Postfix(VPet_Simulator.Core.ToolBar __instance)
         {
-            var levelTextBlock = __instance.FindName("Tlv") as TextBlock;
-            
-            if (_fakeLevel.HasValue && levelTextBlock != null)
+            // 智能模式：动态计算绝对值
+            if (_smartMoneyMode && _getRealMoney != null)
             {
-                levelTextBlock.Text = "Lv " + _fakeLevel.Value;
+                var realMoney = _getRealMoney();
+                if (realMoney < 0)
+                {
+                    _fakeMoney = Math.Abs(realMoney);
+                }
+                else
+                {
+                    _fakeMoney = null;
+                }
+            }
+
+            var levelTextBlock = __instance.FindName("Tlv") as TextBlock;
+            var moneyTextBlock = __instance.FindName("tMoney") as TextBlock;
+            
+            // 判断是否需要显示自定义标签（有等级篡改或金钱篡改）
+            bool shouldShowLabel = _fakeLevel.HasValue || _fakeMoney.HasValue;
+            
+            if (shouldShowLabel && levelTextBlock != null)
+            {
+                // 更新等级文本
+                if (_fakeLevel.HasValue)
+                {
+                    levelTextBlock.Text = "Lv " + _fakeLevel.Value;
+                }
                 
                 // 创建或更新自定义类型标签
                 var panel = levelTextBlock.Parent as Panel;
@@ -136,8 +174,9 @@ namespace VPet.Plugin.VpetAPI
                 }
             }
 
-            if (_fakeMoney.HasValue && __instance.FindName("tMoney") is TextBlock moneyText)
-                moneyText.Text = "$ " + _fakeMoney.Value.ToString("N2");
+            // 更新金钱文本
+            if (_fakeMoney.HasValue && moneyTextBlock != null)
+                moneyTextBlock.Text = "$ " + _fakeMoney.Value.ToString("N2");
         }
 
         public static void Uninitialize()

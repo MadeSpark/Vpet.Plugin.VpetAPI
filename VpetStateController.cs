@@ -384,11 +384,15 @@ namespace VPet.Plugin.VpetAPI
             
             var realMoney = await GetRealMoneyAsync();
             
+            // 设置智能模式和真实金钱获取函数
+            UIDataFaker.SmartMoneyMode = true;
+            UIDataFaker.GetRealMoneyFunc = () => mw.Core.Save.Money;
+            UIDataFaker.CustomType = customType;
+            
             // 如果是正数，不做处理
             if (realMoney >= 0)
             {
                 UIDataFaker.FakeMoney = null;
-                UIDataFaker.CustomType = customType;
                 
                 return (200, new 
                 { 
@@ -400,7 +404,6 @@ namespace VPet.Plugin.VpetAPI
             
             // 负数显示为绝对值
             UIDataFaker.FakeMoney = Math.Abs(realMoney);
-            UIDataFaker.CustomType = customType;
             
             return (200, new 
             { 
