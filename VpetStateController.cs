@@ -74,7 +74,7 @@ namespace VPet.Plugin.VpetAPI
                 case "/set_fake_money":
                     return await SetFakeMoneyAsync(bodyText, token).ConfigureAwait(false);
                 case "/set_fake_money_smart":
-                    return await SetFakeMoneySmartAsync(token).ConfigureAwait(false);
+                    return await SetFakeMoneySmartAsync(bodyText, token).ConfigureAwait(false);
                 case "/reset_fake_data":
                     return await ResetFakeDataAsync(token).ConfigureAwait(false);
                 case "/set_menu":
@@ -377,15 +377,18 @@ namespace VPet.Plugin.VpetAPI
             });
         }
 
-        private async Task<(int, object)> SetFakeMoneySmartAsync(CancellationToken token)
+        private async Task<(int, object)> SetFakeMoneySmartAsync(string bodyText, CancellationToken token)
         {
+            var req = TryDeserialize<FakeDataRequest>(bodyText);
+            var customType = string.IsNullOrWhiteSpace(req?.Type) ? "穷逼系统ProMax" : req.Type;
+            
             var realMoney = await GetRealMoneyAsync();
             
             // 如果是正数，不做处理
             if (realMoney >= 0)
             {
                 UIDataFaker.FakeMoney = null;
-                UIDataFaker.CustomType = "穷逼系统ProMax";
+                UIDataFaker.CustomType = customType;
                 
                 return (200, new 
                 { 
@@ -397,7 +400,7 @@ namespace VPet.Plugin.VpetAPI
             
             // 负数显示为绝对值
             UIDataFaker.FakeMoney = Math.Abs(realMoney);
-            UIDataFaker.CustomType = "穷逼系统ProMax";
+            UIDataFaker.CustomType = customType;
             
             return (200, new 
             { 
