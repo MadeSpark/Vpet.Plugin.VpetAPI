@@ -1,18 +1,20 @@
 using HarmonyLib;
 using System;
+using System.Windows.Controls;
 using VPet_Simulator.Core;
 
 namespace VPet.Plugin.VpetAPI
 {
     /// <summary>
-    /// UI 数据篡改管理器
-    /// 使用 Harmony 拦截游戏的 UI 更新，返回假数据
+    /// UI 数据篡改管理器。
+    /// 只拦截桌宠面板 UI 刷新函数，不修改存档，也不影响购买/扣钱等游戏逻辑。
     /// </summary>
     public static class UIDataFaker
     {
+        private const string HarmonyId = "com.madespark.vpetapi.datafaker";
         private static Harmony? _harmony;
-        private static int? _fakeLevel = null;
-        private static double? _fakeMoney = null;
+        private static int? _fakeLevel;
+        private static double? _fakeMoney;
 
         public static int? FakeLevel
         {
@@ -31,31 +33,23 @@ namespace VPet.Plugin.VpetAPI
             if (_harmony != null)
                 return;
 
-            _harmony = new Harmony("com.madespark.vpetapi.datafaker");
-            
+            _harmony = new Harmony(HarmonyId);
+
             try
             {
-                // Patch IGameSave.Level 属性的 getter
-                var levelGetter = AccessTools.PropertyGetter(typeof(IGameSave), nameof(IGameSave.Level));
-                if (levelGetter != null)
+                var refreshMethod = AccessTools.Method(typeof(VPet_Simulator.Core.ToolBar), nameof(VPet_Simulator.Core.ToolBar.M_TimeUIHandle));
+                if (refreshMethod != null)
                 {
-                    _harmony.Patch(levelGetter,
-                        postfix: new HarmonyMethod(typeof(UIDataFaker), nameof(Level_Postfix)));
+                    _harmony.Patch(
+                        refreshMethod,
+                        postfix: new HarmonyMethod(typeof(UIDataFaker), nameof(ToolBar_M_TimeUIHandle_Postfix)));
                 }
 
-                // Patch IGameSave.Money 属性的 getter
-                var moneyGetter = AccessTools.PropertyGetter(typeof(IGameSave), nameof(IGameSave.Money));
-                if (moneyGetter != null)
-                {
-                    _harmony.Patch(moneyGetter,
-                        postfix: new HarmonyMethod(typeof(UIDataFaker), nameof(Money_Postfix)));
-                }
-
-                System.Diagnostics.Debug.WriteLine("[UIDataFaker] Harmony patches applied successfully");
+                System.Diagnostics.Debug.WriteLine("[UIDataFaker] ToolBar UI patch applied successfully");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UIDataFaker] Failed to apply patches: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[UIDataFaker] Failed to apply UI patch: {ex.Message}");
             }
         }
 
@@ -65,29 +59,30 @@ namespace VPet.Plugin.VpetAPI
             _fakeMoney = null;
         }
 
-        // Harmony Postfix: 拦截 Level 属性的返回值
-        private static void Level_Postfix(ref int __result)
+        public static int GetDisplayLevel(int realLevel)
         {
-            if (_fakeLevel.HasValue)
-            {
-                __result = _fakeLevel.Value;
-            }
+            return _fakeLevel ?? realLevel;
         }
 
-        // Harmony Postfix: 拦截 Money 属性的返回值
-        private static void Money_Postfix(ref double __result)
+        public static double GetDisplayMoney(double realMoney)
         {
-            if (_fakeMoney.HasValue)
-            {
-                __result = _fakeMoney.Value;
-            }
+            return _fakeMoney ?? realMoney;
+        }
+
+        private static void ToolBar_M_TimeUIHandle_Postfix(VPet_Simulator.Core.ToolBar __instance)
+        {
+            if (_fakeLevel.HasValue && __instance.FindName("Tlv") is TextBlock levelText)
+                levelText.Text = "Lv " + _fakeLevel.Value;
+
+            if (_fakeMoney.HasValue && __instance.FindName("tMoney") is TextBlock moneyText)
+                moneyText.Text = "$ " + _fakeMoney.Value.ToString("N2");
         }
 
         public static void Uninitialize()
         {
             if (_harmony != null)
             {
-                _harmony.UnpatchAll("com.madespark.vpetapi.datafaker");
+                _harmony.UnpatchAll(HarmonyId);
                 _harmony = null;
             }
         }

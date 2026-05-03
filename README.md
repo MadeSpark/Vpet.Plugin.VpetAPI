@@ -1,4 +1,4 @@
-# VPet.Plugin.VpetAPI - 智能倍率调整版
+﻿# VPet.Plugin.VpetAPI - 智能倍率调整版
 
 <div align="center">
 
@@ -411,7 +411,49 @@ VPet安装目录/mod/1230_VpetAPIHttp/
 
 ---
 
-### 17. 重置状态
+### 17. 获取礼品列表
+
+**接口**: `POST /get_gift_list`
+
+**请求参数**: `{}`
+
+**返回格式**: 同上
+
+---
+
+### 18. 购买物品
+
+**接口**: `POST /buy_item`
+
+**请求参数**:
+```json
+{
+  "id": "GTC5090",
+  "count": 1
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | string | 否 | 物品名称或ID，为空则随机购买 |
+| count | int | 否 | 购买数量，默认1 |
+
+**说明**: 自动扣除金钱、使用物品，并播放食用/礼品动画。
+
+**返回示例**:
+```json
+{
+  "message": "购买成功",
+  "item": "GTC5090",
+  "count": 1,
+  "totalPrice": 5999.0,
+  "remainingMoney": 60352.38
+}
+```
+
+---
+
+### 19. 重置状态
 
 **接口**: `POST /reset_status`
 
@@ -429,7 +471,7 @@ VPet安装目录/mod/1230_VpetAPIHttp/
 
 ---
 
-### 18. 设置自定义菜单
+### 20. 设置自定义菜单
 
 **接口**: `POST /set_menu`
 
@@ -458,6 +500,82 @@ VPet安装目录/mod/1230_VpetAPIHttp/
 
 ---
 
+### 21. 获取桌宠信息
+
+**接口**: `POST /get_pet_info`
+
+**请求参数**:
+```json
+{}
+```
+
+**返回示例**:
+```json
+{
+  "data": {
+    "name": "桌宠名字",
+    "level": 256,
+    "money": 66352.38,
+    "exp": 651800.45,
+    "levelUpNeed": 655360,
+    "strength": 356.0,
+    "strengthMax": 356.0,
+    "feeling": 220.84,
+    "strengthFood": 272.96,
+    "strengthDrink": 272.03,
+    "likability": 2650.0,
+    "health": 100.0
+  }
+}
+```
+
+**说明**: 读取桌宠当前等级、金钱、经验、体力、心情、饱腹感、口渴度、好感度、健康度。主程序未提供困意值字段，因此未返回困意值。
+
+---
+
+### 22. 篡改桌宠等级（仅修改UI显示）
+
+**接口**: `POST /set_fake_level`
+
+**请求参数**:
+```json
+{
+  "level": 999
+}
+```
+
+**说明**: 使用 Harmony Hook 接管面板 UI 刷新函数，使面板和 API 显示假等级；不修改真实存档，不影响工作/购买等游戏逻辑。
+
+---
+
+### 23. 篡改桌宠金钱（仅修改UI显示）
+
+**接口**: `POST /set_fake_money`
+
+**请求参数**:
+```json
+{
+  "money": 999999.99
+}
+```
+
+**说明**: 使用 Harmony Hook 接管面板 UI 刷新函数，使面板和 API 显示假金钱；不修改真实存档，不影响购买/扣钱等游戏逻辑。
+
+---
+
+### 24. 恢复UI真实数值
+
+**接口**: `POST /reset_fake_data`
+
+**请求参数**:
+```json
+{}
+```
+
+**说明**: 清除等级与金钱篡改值，恢复 UI 与 API 返回真实数据。
+
+---
+
 ### 物品字段说明
 
 | 字段 | 类型 | 说明 |
@@ -471,7 +589,8 @@ VPet安装目录/mod/1230_VpetAPIHttp/
 | strength | double | 体力 |
 | feeling | double | 心情 |
 | health | double | 健康 |
-| likability | double | 喜好程度/好感度 |
+| likability | double | 好感度数值 |
+| likabilityPercent | string | 喜好程度百分比 |
 | description | string | 物品介绍文本（已翻译） |
 
 ---
@@ -595,7 +714,8 @@ int actualLimit = (LevelLimit + 10) * maxMultiplier;
 ```
 1230_VpetAPIHttp/
 ├── plugin/
-│   └── VPet.Plugin.VpetAPI.dll
+│   ├── VPet.Plugin.VpetAPI.dll
+│   └── 0Harmony.dll
 ├── icon.png
 └── info.lps
 ```
@@ -623,6 +743,7 @@ dotnet build -c Release
 ### 依赖项
 
 - .NET 8.0 Windows
+- Lib.Harmony (2.3.3)
 - VPet-Simulator.Core (1.1.0.50)
 - VPet-Simulator.Windows.Interface (1.1.0.50)
 

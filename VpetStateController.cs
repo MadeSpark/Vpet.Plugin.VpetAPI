@@ -324,8 +324,8 @@ namespace VPet.Plugin.VpetAPI
                 return new PetInfoResponse
                 {
                     Name = save.Name,
-                    Level = save.Level,  // 会被 Harmony Hook 拦截
-                    Money = save.Money,  // 会被 Harmony Hook 拦截
+                    Level = UIDataFaker.GetDisplayLevel(save.Level),
+                    Money = UIDataFaker.GetDisplayMoney(save.Money),
                     Exp = save.Exp,
                     LevelUpNeed = save.LevelUpNeed(),
                     Strength = save.Strength,
@@ -395,26 +395,10 @@ namespace VPet.Plugin.VpetAPI
             });
         }
 
-        // 获取真实金钱（直接访问字段）
+        // 获取真实金钱
         private async Task<double> GetRealMoneyAsync()
         {
-            return await mw.Dispatcher.InvokeAsync(() =>
-            {
-                // 通过反射访问私有字段来获取真实值
-                var saveType = mw.Core.Save.GetType();
-                var moneyField = saveType.GetField("money", 
-                    System.Reflection.BindingFlags.Instance | 
-                    System.Reflection.BindingFlags.NonPublic);
-                
-                if (moneyField != null)
-                {
-                    var value = moneyField.GetValue(mw.Core.Save);
-                    if (value is double money)
-                        return money;
-                }
-                
-                return mw.Core.Save.Money;
-            });
+            return await mw.Dispatcher.InvokeAsync(() => mw.Core.Save.Money);
         }
 
         private T? TryDeserialize<T>(string json) where T : class

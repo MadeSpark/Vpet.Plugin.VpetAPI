@@ -7,6 +7,7 @@
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AssemblyName>VPet.Plugin.VpetAPI</AssemblyName>
     <RootNamespace>VPet.Plugin.VpetAPI</RootNamespace>
   </PropertyGroup>
@@ -37,5 +38,7 @@
     <MakeDir Directories="$(PluginDir)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDll)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" />
     <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFiles="$(PluginPdb)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <Copy SourceFiles="$(TargetDir)0Harmony.dll" DestinationFolder="$(PluginDir)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)0Harmony.dll')" />
+    <Copy SourceFiles="$(TargetDir)Lib.Harmony.dll" DestinationFolder="$(PluginDir)" OverWriteReadOnlyFiles="true" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)Lib.Harmony.dll')" />
   </Target>
 </Project>
