@@ -1,4 +1,4 @@
-# VPet.Plugin.VpetAPI - 智能倍率调整版
+﻿# VPet.Plugin.VpetAPI - 智能倍率调整版
 
 <div align="center">
 
