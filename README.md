@@ -15,6 +15,76 @@
 
 ---
 
+## 🔌 依赖检测（供其他 Mod 使用）
+
+如果你的 Mod 需要依赖 VpetAPI，可以通过反射检测是否成功加载：
+
+```csharp
+// 检测 VpetAPI 是否加载
+public static bool IsVpetApiLoaded()
+{
+    try
+    {
+        var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "VPet.Plugin.VpetAPI");
+        
+        if (assembly == null)
+            return false;
+        
+        var serviceType = assembly.GetType("VPet.Plugin.VpetAPI.VpetApiService");
+        if (serviceType == null)
+            return false;
+        
+        var isRunningProperty = serviceType.GetProperty("IsRunning", 
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        
+        if (isRunningProperty == null)
+            return false;
+        
+        return (bool)(isRunningProperty.GetValue(null) ?? false);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+// 获取服务地址
+public static string? GetVpetApiUrl()
+{
+    try
+    {
+        var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "VPet.Plugin.VpetAPI");
+        
+        var serviceType = assembly?.GetType("VPet.Plugin.VpetAPI.VpetApiService");
+        var urlProperty = serviceType?.GetProperty("ServiceUrl",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        
+        return urlProperty?.GetValue(null) as string;
+    }
+    catch
+    {
+        return null;
+    }
+}
+```
+
+**使用示例**：
+```csharp
+if (IsVpetApiLoaded())
+{
+    var url = GetVpetApiUrl(); // "http://127.0.0.1:52814/"
+    // 可以安全调用 VpetAPI
+}
+else
+{
+    // VpetAPI 未加载，显示提示
+}
+```
+
+---
+
 ## 📖 功能介绍
 
 这是一个增强版的VpetAPI插件，在原有HTTP API控制功能的基础上，新增了**智能倍率自动调整**功能。

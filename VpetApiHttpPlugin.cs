@@ -32,6 +32,10 @@ namespace VPet.Plugin.VpetAPI
             {
                 server = new HttpControlServer(stateController);
                 server.Start();
+                
+                // 标记服务已启动
+                VpetApiService.Start(server.Port);
+                
                 TryNotify($"VpetAPI HTTP 服务已启动：127.0.0.1:{server.Port}");
             }
             catch (Exception ex)
@@ -61,6 +65,7 @@ namespace VPet.Plugin.VpetAPI
         {
             try { server?.Stop(); } catch { }
             try { UIDataFaker.Uninitialize(); } catch { }
+            try { VpetApiService.Stop(); } catch { }
         }
 
         private void TryNotify(string text)
