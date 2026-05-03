@@ -9,8 +9,24 @@ namespace VPet.Plugin.VpetAPI
     public static class VpetApiService
     {
         private static readonly object Sync = new();
+        private static bool isLoaded = false;
         private static bool isRunning = false;
         private static int port = 52814;
+        private static string? errorMessage = null;
+
+        /// <summary>
+        /// VpetAPI 插件是否已加载（无论 HTTP 服务是否成功启动）
+        /// </summary>
+        public static bool IsLoaded
+        {
+            get
+            {
+                lock (Sync)
+                {
+                    return isLoaded;
+                }
+            }
+        }
 
         /// <summary>
         /// VpetAPI HTTP 服务是否正在运行
@@ -46,6 +62,31 @@ namespace VPet.Plugin.VpetAPI
         public static string ServiceUrl => $"http://127.0.0.1:{Port}/";
 
         /// <summary>
+        /// 如果服务启动失败，这里包含错误信息
+        /// </summary>
+        public static string? ErrorMessage
+        {
+            get
+            {
+                lock (Sync)
+                {
+                    return errorMessage;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 标记插件已加载（由插件内部调用）
+        /// </summary>
+        internal static void MarkLoaded()
+        {
+            lock (Sync)
+            {
+                isLoaded = true;
+            }
+        }
+
+        /// <summary>
         /// 启动服务（由插件内部调用）
         /// </summary>
         internal static void Start(int servicePort)
@@ -54,6 +95,19 @@ namespace VPet.Plugin.VpetAPI
             {
                 isRunning = true;
                 port = servicePort;
+                errorMessage = null;
+            }
+        }
+
+        /// <summary>
+        /// 标记服务启动失败（由插件内部调用）
+        /// </summary>
+        internal static void MarkFailed(string error)
+        {
+            lock (Sync)
+            {
+                isRunning = false;
+                errorMessage = error;
             }
         }
 

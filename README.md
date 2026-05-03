@@ -20,7 +20,7 @@
 如果你的 Mod 需要依赖 VpetAPI，可以通过反射检测是否成功加载：
 
 ```csharp
-// 检测 VpetAPI 是否加载
+// 检测 VpetAPI 插件是否加载
 public static bool IsVpetApiLoaded()
 {
     try
@@ -35,13 +35,33 @@ public static bool IsVpetApiLoaded()
         if (serviceType == null)
             return false;
         
-        var isRunningProperty = serviceType.GetProperty("IsRunning", 
+        var isLoadedProperty = serviceType.GetProperty("IsLoaded", 
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
         
-        if (isRunningProperty == null)
+        if (isLoadedProperty == null)
             return false;
         
-        return (bool)(isRunningProperty.GetValue(null) ?? false);
+        return (bool)(isLoadedProperty.GetValue(null) ?? false);
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+// 检测 HTTP 服务是否运行
+public static bool IsVpetApiRunning()
+{
+    try
+    {
+        var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "VPet.Plugin.VpetAPI");
+        
+        var serviceType = assembly?.GetType("VPet.Plugin.VpetAPI.VpetApiService");
+        var isRunningProperty = serviceType?.GetProperty("IsRunning",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        
+        return (bool)(isRunningProperty?.GetValue(null) ?? false);
     }
     catch
     {
@@ -68,19 +88,51 @@ public static string? GetVpetApiUrl()
         return null;
     }
 }
+
+// 获取错误信息（如果启动失败）
+public static string? GetVpetApiError()
+{
+    try
+    {
+        var assembly = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "VPet.Plugin.VpetAPI");
+        
+        var serviceType = assembly?.GetType("VPet.Plugin.VpetAPI.VpetApiService");
+        var errorProperty = serviceType?.GetProperty("ErrorMessage",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        
+        return errorProperty?.GetValue(null) as string;
+    }
+    catch
+    {
+        return null;
+    }
+}
 ```
 
 **使用示例**：
 ```csharp
-if (IsVpetApiLoaded())
+if (!IsVpetApiLoaded())
 {
-    var url = GetVpetApiUrl(); // "http://127.0.0.1:52814/"
-    // 可以安全调用 VpetAPI
+    MessageBox.Show("需要安装 VpetAPI 插件");
+    return;
 }
-else
+
+if (!IsVpetApiRunning())
 {
-    // VpetAPI 未加载，显示提示
+    var error = GetVpetApiError();
+    MessageBox.Show($"VpetAPI 已安装但服务未运行\n错误: {error}");
+    return;
 }
+
+// VpetAPI 正常运行，可以调用接口
+var url = GetVpetApiUrl(); // "http://127.0.0.1:52814/"
+```
+
+**状态说明**：
+- `IsLoaded = false` → VpetAPI 插件未安装
+- `IsLoaded = true, IsRunning = false` → 插件已安装但 HTTP 服务启动失败（端口占用等）
+- `IsLoaded = true, IsRunning = true` → 插件正常运行，可以调用 API
 ```
 
 ---

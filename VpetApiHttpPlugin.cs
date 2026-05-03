@@ -20,6 +20,9 @@ namespace VPet.Plugin.VpetAPI
 
         public override void LoadPlugin()
         {
+            // 标记插件已加载
+            VpetApiService.MarkLoaded();
+            
             // 初始化 UI 数据篡改器（Harmony Hooks）
             UIDataFaker.Initialize();
 
@@ -40,6 +43,9 @@ namespace VPet.Plugin.VpetAPI
             }
             catch (Exception ex)
             {
+                // 标记服务启动失败
+                VpetApiService.MarkFailed(ex.Message);
+                
                 TryNotify($"VpetAPI HTTP 服务启动失败：{ex.Message}");
                 try
                 {
