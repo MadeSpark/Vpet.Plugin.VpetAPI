@@ -385,14 +385,10 @@ namespace VPet.Plugin.VpetAPI
             });
         }
 
-        // 获取真实等级（绕过 Harmony Hook）
+        // 获取真实等级
         private async Task<int> GetRealLevelAsync()
         {
-            return await mw.Dispatcher.InvokeAsync(() =>
-            {
-                var exp = mw.Core.Save.Exp;
-                return exp < 0 ? 1 : (int)(Math.Sqrt(exp) / 10) + 1;
-            });
+            return await mw.Dispatcher.InvokeAsync(() => mw.Core.Save.Level);
         }
 
         // 获取真实金钱
