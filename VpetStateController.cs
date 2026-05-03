@@ -324,8 +324,8 @@ namespace VPet.Plugin.VpetAPI
                 return new PetInfoResponse
                 {
                     Name = save.Name,
-                    Level = UIDataFaker.GetDisplayLevel(save.Level),
-                    Money = UIDataFaker.GetDisplayMoney(save.Money),
+                    Level = save.Level,
+                    Money = save.Money,
                     Exp = save.Exp,
                     LevelUpNeed = save.LevelUpNeed(),
                     Strength = save.Strength,
