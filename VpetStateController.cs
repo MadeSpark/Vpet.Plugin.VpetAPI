@@ -73,6 +73,8 @@ namespace VPet.Plugin.VpetAPI
                     return await SetFakeLevelAsync(bodyText, token).ConfigureAwait(false);
                 case "/set_fake_money":
                     return await SetFakeMoneyAsync(bodyText, token).ConfigureAwait(false);
+                case "/set_fake_money_smart":
+                    return await SetFakeMoneySmartAsync(token).ConfigureAwait(false);
                 case "/reset_fake_data":
                     return await ResetFakeDataAsync(token).ConfigureAwait(false);
                 case "/set_menu":
@@ -372,6 +374,37 @@ namespace VPet.Plugin.VpetAPI
                 message = "金钱篡改成功（UI显示已更新）",
                 fakeMoney = UIDataFaker.FakeMoney.Value,
                 realMoney = await GetRealMoneyAsync()
+            });
+        }
+
+        private async Task<(int, object)> SetFakeMoneySmartAsync(CancellationToken token)
+        {
+            var realMoney = await GetRealMoneyAsync();
+            
+            // 如果是正数，不做处理
+            if (realMoney >= 0)
+            {
+                UIDataFaker.FakeMoney = null;
+                UIDataFaker.CustomType = "穷逼系统ProMax";
+                
+                return (200, new 
+                { 
+                    message = "金钱为正数，无需篡改",
+                    realMoney = realMoney,
+                    changed = false
+                });
+            }
+            
+            // 负数显示为绝对值
+            UIDataFaker.FakeMoney = Math.Abs(realMoney);
+            UIDataFaker.CustomType = "穷逼系统ProMax";
+            
+            return (200, new 
+            { 
+                message = "智能篡改成功（负数已转为正数显示）",
+                fakeMoney = UIDataFaker.FakeMoney.Value,
+                realMoney = realMoney,
+                changed = true
             });
         }
 
