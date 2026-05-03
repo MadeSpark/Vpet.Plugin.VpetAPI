@@ -14,7 +14,7 @@ namespace YourModNamespace
     /// </summary>
     public class DependencyExamplePlugin : MainPlugin
     {
-        private const string DependencyWorkshopUrl = "https://steamcommunity.com/sharedfiles/filedetails/?id=3666818950";
+        private const string DependencyWorkshopUrl = "https://steamcommunity.com/sharedfiles/filedetails/?id=3719328861";
         private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
         private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
