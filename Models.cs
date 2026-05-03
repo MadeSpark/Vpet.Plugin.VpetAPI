@@ -88,5 +88,6 @@ namespace VPet.Plugin.VpetAPI
     {
         public int? Level { get; set; }
         public double? Money { get; set; }
+        public string? Type { get; set; }
     }
 }

@@ -348,6 +348,7 @@ namespace VPet.Plugin.VpetAPI
                 return (400, new { error = "请求体需要包含 level" });
 
             UIDataFaker.FakeLevel = Math.Max(1, req.Level.Value);
+            UIDataFaker.CustomType = string.IsNullOrWhiteSpace(req.Type) ? "穷逼系统ProMax" : req.Type;
 
             return (200, new 
             { 
@@ -364,6 +365,7 @@ namespace VPet.Plugin.VpetAPI
                 return (400, new { error = "请求体需要包含 money" });
 
             UIDataFaker.FakeMoney = Math.Max(0, req.Money.Value);
+            UIDataFaker.CustomType = string.IsNullOrWhiteSpace(req.Type) ? "穷逼系统ProMax" : req.Type;
 
             return (200, new 
             { 
