@@ -81,6 +81,8 @@ namespace VPet.Plugin.VpetAPI
                     return await SetMenuAsync(bodyText, token).ConfigureAwait(false);
                 case "/reset_status":
                     return await ResetStatusAsync(token).ConfigureAwait(false);
+                case "/debug_toolbar":
+                    return await DebugToolBarAsync().ConfigureAwait(false);
                 default:
                     return (404, new { error = $"未知接口: {path}" });
             }
@@ -351,9 +353,12 @@ namespace VPet.Plugin.VpetAPI
 
             UIDataFaker.FakeLevel = Math.Max(1, req.Level.Value);
             UIDataFaker.CustomType = string.IsNullOrWhiteSpace(req.Type) ? "穷逼系统ProMax" : req.Type;
+            UIDataFaker.GetRealLevelFunc = () => mw.Core.Save.Level;
 
-            return (200, new 
-            { 
+            await RefreshToolBarUI();
+
+            return (200, new
+            {
                 message = "等级篡改成功（UI显示已更新）",
                 fakeLevel = UIDataFaker.FakeLevel.Value,
                 realLevel = await GetRealLevelAsync()
@@ -368,9 +373,12 @@ namespace VPet.Plugin.VpetAPI
 
             UIDataFaker.FakeMoney = Math.Max(0, req.Money.Value);
             UIDataFaker.CustomType = string.IsNullOrWhiteSpace(req.Type) ? "穷逼系统ProMax" : req.Type;
+            UIDataFaker.GetRealMoneyFunc = () => mw.Core.Save.Money;
 
-            return (200, new 
-            { 
+            await RefreshToolBarUI();
+
+            return (200, new
+            {
                 message = "金钱篡改成功（UI显示已更新）",
                 fakeMoney = UIDataFaker.FakeMoney.Value,
                 realMoney = await GetRealMoneyAsync()
@@ -393,17 +401,19 @@ namespace VPet.Plugin.VpetAPI
             if (realMoney >= 0)
             {
                 UIDataFaker.FakeMoney = null;
-                
-                return (200, new 
-                { 
+                await RefreshToolBarUI();
+
+                return (200, new
+                {
                     message = "金钱为正数，无需篡改",
                     realMoney = realMoney,
                     changed = false
                 });
             }
-            
+
             // 负数显示为绝对值
             UIDataFaker.FakeMoney = Math.Abs(realMoney);
+            await RefreshToolBarUI();
             
             return (200, new 
             { 
@@ -417,13 +427,112 @@ namespace VPet.Plugin.VpetAPI
         private async Task<(int, object)> ResetFakeDataAsync(CancellationToken token)
         {
             UIDataFaker.Reset();
+            await RefreshToolBarUI();
 
-            return (200, new 
-            { 
+            return (200, new
+            {
                 message = "已恢复真实数据",
                 level = await GetRealLevelAsync(),
                 money = await GetRealMoneyAsync()
             });
+        }
+
+        /// <summary>
+        /// 立即触发一次面板 UI 刷新。
+        /// 宿主更新后 M_TimeUIHandle 以 Tag 缓存数值并可能跳过重绘，
+        /// 主动调一次可让篡改/恢复即时生效（标签与文本由 postfix 处理）。
+        /// </summary>
+        private async Task RefreshToolBarUI()
+        {
+            try
+            {
+                await mw.Dispatcher.InvokeAsync(() =>
+                {
+                    var main = mw.Main;
+                    main?.ToolBar?.M_TimeUIHandle(main);
+                });
+            }
+            catch
+            {
+                // 刷新失败不影响接口返回，下一轮定时刷新会补上
+            }
+        }
+
+        /// <summary>
+        /// 临时诊断接口：dump ToolBar 视觉树与标签状态，用于定位称号不显示的问题。
+        /// </summary>
+        private Task<(int, object)> DebugToolBarAsync()
+        {
+            return mw.Dispatcher.InvokeAsync(() =>
+            {
+                var result = new Dictionary<string, object>();
+                try
+                {
+                    var main = mw.Main;
+                    var toolBar = main?.ToolBar;
+                    result["toolBarType"] = toolBar?.GetType().FullName ?? "null";
+
+                    // UI 同步定时器状态（替代 Harmony 补丁）
+                    result["syncTimerRunning"] = UIDataFaker.SyncTimerRunning;
+
+                    if (toolBar == null)
+                        return (200, result);
+
+                    var tl = toolBar.FindName("Tlv") as System.Windows.Controls.TextBlock;
+                    var tm = toolBar.FindName("tMoney") as System.Windows.Controls.TextBlock;
+                    result["find_Tlv"] = tl == null ? "null" : tl.Text;
+                    result["find_tMoney"] = tm == null ? "null" : tm.Text;
+
+                    // 公共字段直接访问
+                    result["field_Tlv"] = toolBar.Tlv == null ? "null" : toolBar.Tlv.Text;
+
+                    if (tl != null)
+                    {
+                        var chain = new List<string>();
+                        System.Windows.DependencyObject walker = tl;
+                        while (walker != null)
+                        {
+                            var fe = walker as System.Windows.FrameworkElement;
+                            chain.Add(fe == null ? walker.GetType().Name : $"{walker.GetType().Name}(name={fe.Name ?? "-"})");
+                            walker = System.Windows.Media.VisualTreeHelper.GetParent(walker);
+                        }
+                        result["tlvParentChain"] = chain;
+                    }
+
+                    // gdPanel 子项
+                    var gd = toolBar.FindName("gdPanel") as System.Windows.Controls.Panel;
+                    if (gd != null)
+                    {
+                        var children = new List<string>();
+                        foreach (System.Windows.DependencyObject child in gd.Children)
+                        {
+                            var fe = child as System.Windows.FrameworkElement;
+                            children.Add(fe == null ? child.GetType().Name : $"{child.GetType().Name}(name={fe.Name ?? "-"})");
+                        }
+                        result["gdPanelChildren"] = children;
+
+                        // 找自定义标签
+                        var label = gd.FindName("VpetAPI_CustomTypeLabel") as System.Windows.Controls.TextBlock;
+                        if (label != null)
+                            result["customLabel_inGdPanel"] = $"text={label.Text}, vis={label.Visibility}, parent={label.Parent?.GetType().Name}";
+                    }
+
+                    result["fakerState"] = new Dictionary<string, object>
+                    {
+                        ["fakeLevel"] = (object?)UIDataFaker.FakeLevel ?? "null",
+                        ["fakeMoney"] = (object?)UIDataFaker.FakeMoney ?? "null",
+                        ["customType"] = UIDataFaker.CustomType,
+                        ["smartMode"] = UIDataFaker.SmartMoneyMode,
+                        ["levelWasFaked"] = UIDataFaker.LevelWasFaked,
+                        ["moneyWasFaked"] = UIDataFaker.MoneyWasFaked
+                    };
+                }
+                catch (Exception ex)
+                {
+                    result["error"] = ex.ToString();
+                }
+                return (200, result);
+            }).Task.ContinueWith(t => ((int, object))t.Result);
         }
 
         // 获取真实等级

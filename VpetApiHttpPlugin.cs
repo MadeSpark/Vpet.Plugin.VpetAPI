@@ -23,8 +23,8 @@ namespace VPet.Plugin.VpetAPI
             // 标记插件已加载
             VpetApiService.MarkLoaded();
             
-            // 初始化 UI 数据篡改器（Harmony Hooks）
-            UIDataFaker.Initialize();
+            // 初始化面板 UI 同步（替代 Harmony 补丁：兼容 .NET 10 宿主，避免与其他 mod 的 0Harmony 版本冲突）
+            UIDataFaker.Initialize(() => MW.Main?.ToolBar, MW.Dispatcher);
 
             mover = new PetMover(MW);
             workCatalog = new WorkCatalog(MW);

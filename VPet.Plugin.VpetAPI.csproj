@@ -17,6 +17,12 @@
     <EmbeddedResource Remove="1230_VpetAPIHttp\**" />
     <None Remove="1230_VpetAPIHttp\**" />
     <Page Remove="1230_VpetAPIHttp\**" />
+    <!-- 依赖调用示例是给单独的依赖 mod 工程复制的模板；
+         编译进本 DLL 会产生第二个 MainPlugin 子类，
+         宿主 CoreMOD 会因 LoadPlug 重复键报“代码插件损坏” -->
+    <Compile Remove="依赖调用例子.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Remove="tools\**" />
     <EmbeddedResource Remove="tools\**" />
     <None Remove="tools\**" />
@@ -24,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     <PackageReference Include="VPet-Simulator.Core" Version="1.1.0.50" />
     <PackageReference Include="VPet-Simulator.Windows.Interface" Version="1.1.0.50" />
   </ItemGroup>
